@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  NOT ported from Dart, and NOT complete — this only lists the app's static
+  routes (home/products/about/contacts). It intentionally does NOT list
+  /product/:id or /category/:id URLs: those are only known at runtime via
+  the API, and generating them here would mean either faking IDs or fetching
+  the full product/category catalog at build time — neither is safe to do
+  without confirming with a real API/build pipeline. A correct dynamic
+  sitemap needs to be generated server-side (or in a build step with API
+  access) once that's set up.
+
+  Also replace REPLACE-WITH-PRODUCTION-DOMAIN below (and in robots.txt)
+  with the real production domain before deploying.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://littleamerica.store/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://littleamerica.store/products</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://littleamerica.store/aboutUs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://littleamerica.store/contacts</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

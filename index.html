@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Little America — американські товари в Україні</title>
+    <!-- Static fallback for crawlers/link-unfurlers that don't execute JS.
+         src/seo/useSeo.ts overwrites these at runtime with page-specific
+         values once React mounts (see that file for why both are needed —
+         this is a pure client-side SPA, no SSR/prerendering). -->
+    <meta
+      name="description"
+      content="Little America — інтернет-магазин американських товарів: парфуми, косметика, солодощі, свічки, білизна, кава. Victoria's Secret, Bath and Body Works, Starbucks, iHerb та інші відомі бренди з доставкою по Україні."
+    />
+    <meta property="og:title" content="Little America — американські товари в Україні" />
+    <meta
+      property="og:description"
+      content="Парфуми, косметика, солодощі, свічки, білизна, кава та товари відомих американських брендів з доставкою по Україні."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/favicon.svg" />
+    <meta property="og:site_name" content="Little America" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="littleamerica">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+    <link rel="canonical" href="https://littleamerica.store/"/>
+<!--    <link rel="manifest" href="/manifest.json">-->
+    <meta property="og:site_name" content="littleamerica.store">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:domain" content="littleamerica.store">
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-206698556-1">
+    </script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-206698556-1');
+    </script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZQN61HGPJX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-ZQN61HGPJX');
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyARb20eAx7B6UiunYPApAOYAYX-0O8HNS4"></script>
+
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
