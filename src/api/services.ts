@@ -5,8 +5,11 @@ import type {
   CategoryModel,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  CheckPhoneRequest,
+  CheckPhoneResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
+  LoginByPhoneRequest,
   LoginRequest,
   NewsModel,
   NPCityInfo,
@@ -26,6 +29,7 @@ import type {
   ResetPasswordRequest,
   ResetPasswordResponse,
   SearchFilters,
+  SetPasswordByPhoneRequest,
   UpdateProfileRequest,
   UserProfile,
   UserTokenData,
@@ -55,14 +59,18 @@ function normalizeCategory(raw: RawCategoryModel): CategoryModel {
 // Ported from lib/app/networking/services/category_api.dart
 export const categoryApi = {
   getCategories: async (): Promise<CategoryModel[]> => {
-    const { data } = await httpClient.get<RawCategoryModel[]>("/api/v2/category");
+    const { data } =
+      await httpClient.get<RawCategoryModel[]>("/api/v2/category");
     return data.map(normalizeCategory);
   },
 };
 
 // Ported from lib/app/networking/services/product_api.dart
 export const productApi = {
-  getLast: async (limit: number, page: number): Promise<OptimizedProductModel[]> => {
+  getLast: async (
+    limit: number,
+    page: number,
+  ): Promise<OptimizedProductModel[]> => {
     const { data } = await httpClient.get<OptimizedProductModel[]>(
       "/api/v2/product/last",
       { params: { page, limit } },
@@ -74,10 +82,9 @@ export const productApi = {
     id: number,
     page = 1,
   ): Promise<PaginatedResponse<OptimizedProductModel>> => {
-    const { data } = await httpClient.get<PaginatedResponse<OptimizedProductModel>>(
-      `/api/v2/product/web/by/category/${id}`,
-      { params: { page } },
-    );
+    const { data } = await httpClient.get<
+      PaginatedResponse<OptimizedProductModel>
+    >(`/api/v2/product/web/by/category/${id}`, { params: { page } });
     return data;
   },
 
@@ -85,7 +92,10 @@ export const productApi = {
   // "АКЦІЙНІ ПРОПОЗИЦІЇ" (sale) grid seen in the target screenshots. Using
   // the same "last products" endpoint as a placeholder data source until the
   // real sale/promo endpoint is confirmed — swap this out once known.
-  getSale: async (limit: number, page: number): Promise<OptimizedProductModel[]> => {
+  getSale: async (
+    limit: number,
+    page: number,
+  ): Promise<OptimizedProductModel[]> => {
     const { data } = await httpClient.get<OptimizedProductModel[]>(
       "/api/v2/product/last",
       { params: { page, limit } },
@@ -94,13 +104,17 @@ export const productApi = {
   },
 
   getById: async (id: number): Promise<ProductModel> => {
-    const { data } = await httpClient.get<ProductModel>(`/api/v2/product/${id}`);
+    const { data } = await httpClient.get<ProductModel>(
+      `/api/v2/product/${id}`,
+    );
     return data;
   },
 
   /** Recommended product ids for a category — the product page filters out its own id and resolves the rest via getByIds. */
   recommendation: async (categoryId: number): Promise<number[]> => {
-    const { data } = await httpClient.get<{ id: number }[]>(`/api/v2/product/recs/${categoryId}`);
+    const { data } = await httpClient.get<{ id: number }[]>(
+      `/api/v2/product/recs/${categoryId}`,
+    );
     return data.map((e) => e.id);
   },
 
@@ -118,12 +132,13 @@ export const productApi = {
   // SearchFilters 1:1 (ProductFilterRequest on the Kotlin side); response is
   // { content, total, pageable } — pageable is ignored here since
   // PaginatedResponse only reads content/total.
-  search: async (filters: SearchFilters, page = 1): Promise<PaginatedResponse<OptimizedProductModel>> => {
-    const { data } = await httpClient.post<PaginatedResponse<OptimizedProductModel>>(
-      "/api/v2/product/optimized/filter",
-      filters,
-      { params: { page } },
-    );
+  search: async (
+    filters: SearchFilters,
+    page = 1,
+  ): Promise<PaginatedResponse<OptimizedProductModel>> => {
+    const { data } = await httpClient.post<
+      PaginatedResponse<OptimizedProductModel>
+    >("/api/v2/product/optimized/filter", filters, { params: { page } });
     return data;
   },
 };
@@ -145,11 +160,14 @@ export const npApi = {
   // POST /api/v2/newpost/city/search, body { CityName, Limit, Page } — only
   // called once the query is 3+ chars (see useCitySearch).
   searchCity: async (cityName: string): Promise<NPCityInfo[]> => {
-    const { data } = await httpClient.post<NPCityInfo[]>("/api/v2/newpost/city/search", {
-      CityName: cityName,
-      Limit: "50",
-      Page: "1",
-    });
+    const { data } = await httpClient.post<NPCityInfo[]>(
+      "/api/v2/newpost/city/search",
+      {
+        CityName: cityName,
+        Limit: "50",
+        Page: "1",
+      },
+    );
     return data;
   },
 
@@ -159,7 +177,10 @@ export const npApi = {
   // Loads the full warehouse list for the city up front; the UI then filters
   // client-side as the user types (not a live per-keystroke search).
   searchWarehouses: async (cityRef: string): Promise<NPWarehouse[]> => {
-    const { data } = await httpClient.post<NPWarehouse[]>("/api/v2/newpost/warehouse/by/city", { cityRef });
+    const { data } = await httpClient.post<NPWarehouse[]>(
+      "/api/v2/newpost/warehouse/by/city",
+      { cityRef },
+    );
     return data;
   },
 };
@@ -169,7 +190,10 @@ export const orderApi = {
   // POST /api/v2/order/web/save — only `data.number` is read from the
   // response in the Dart source; everything else in the response is ignored.
   save: async (order: OrderRequest): Promise<number> => {
-    const { data } = await httpClient.post<{ number: number }>("/api/v2/order/web/save", order);
+    const { data } = await httpClient.post<{ number: number }>(
+      "/api/v2/order/web/save",
+      order,
+    );
     return data.number;
   },
 
@@ -178,13 +202,27 @@ export const orderApi = {
   // Requires a logged-in user — the auth header is attached automatically
   // by the httpClient interceptor (see api/client.ts) whenever a real user
   // token is present.
-  getWebList: async (page = 1, count = 10): Promise<PagedOrders> => {
-    const { data } = await httpClient.get<PagedOrders>("/api/v2/order/web/list", { params: { page, count } });
+  // `online` splits the customer's order history into two separate pages —
+  // true for "Замовлення" (web/storefront checkout, the default — matches
+  // the backend's own default so existing callers don't need to change),
+  // false for "Мої покупки" (in-store sales staff linked to this client by
+  // phone — see OrdersPage vs InStorePurchasesPage).
+  getWebList: async (
+    page = 1,
+    count = 10,
+    online = true,
+  ): Promise<PagedOrders> => {
+    const { data } = await httpClient.get<PagedOrders>(
+      "/api/v2/order/web/list",
+      { params: { page, count, online } },
+    );
     return data;
   },
 
   getWebDetail: async (number: string): Promise<OrderDetail> => {
-    const { data } = await httpClient.get<OrderDetail>(`/api/v2/order/web/${number}`);
+    const { data } = await httpClient.get<OrderDetail>(
+      `/api/v2/order/web/${number}`,
+    );
     return data;
   },
 };
@@ -201,7 +239,10 @@ export const walletApi = {
   },
 
   getHistory: async (page = 1, count = 50): Promise<BonusTransaction[]> => {
-    const { data } = await httpClient.get<BonusTransaction[]>("/api/v2/wallet/history", { params: { page, count } });
+    const { data } = await httpClient.get<BonusTransaction[]>(
+      "/api/v2/wallet/history",
+      { params: { page, count } },
+    );
     return data;
   },
 };
@@ -220,25 +261,38 @@ export const walletApi = {
 // truly header-less endpoints under /auth.
 export const authUserApi = {
   login: async (request: LoginRequest): Promise<UserTokenData> => {
-    const { data } = await httpClient.post<UserTokenData>("/api/v2/client-auth/login", request);
+    const { data } = await httpClient.post<UserTokenData>(
+      "/api/v2/client-auth/login",
+      request,
+    );
     return data;
   },
 
   // No longer returns a token directly — registration now requires a
   // second "verify your email" step (see verifyRegistrationEmail below).
   register: async (request: RegisterRequest): Promise<RegisterResponse> => {
-    const { data } = await httpClient.post<RegisterResponse>("/api/v2/client-auth/register", request);
+    const { data } = await httpClient.post<RegisterResponse>(
+      "/api/v2/client-auth/register",
+      request,
+    );
     return data;
   },
 
   // Step 2 of registration — submits the 6-digit code emailed after
   // register(). Success returns a real token, logging the user in.
-  verifyRegistrationEmail: async (request: RegisterVerifyRequest): Promise<UserTokenData> => {
-    const { data } = await httpClient.post<UserTokenData>("/api/v2/client-auth/verify-registration-email", request);
+  verifyRegistrationEmail: async (
+    request: RegisterVerifyRequest,
+  ): Promise<UserTokenData> => {
+    const { data } = await httpClient.post<UserTokenData>(
+      "/api/v2/client-auth/verify-registration-email",
+      request,
+    );
     return data;
   },
 
-  resendVerificationEmail: async (request: ResendVerificationRequest): Promise<ResendVerificationResponse> => {
+  resendVerificationEmail: async (
+    request: ResendVerificationRequest,
+  ): Promise<ResendVerificationResponse> => {
     const { data } = await httpClient.post<ResendVerificationResponse>(
       "/api/v2/client-auth/resend-verification-email",
       request,
@@ -246,18 +300,66 @@ export const authUserApi = {
     return data;
   },
 
-  forgotPassword: async (request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> => {
-    const { data } = await httpClient.post<ForgotPasswordResponse>("/api/v2/client-auth/forgot-password", request);
+  forgotPassword: async (
+    request: ForgotPasswordRequest,
+  ): Promise<ForgotPasswordResponse> => {
+    const { data } = await httpClient.post<ForgotPasswordResponse>(
+      "/api/v2/client-auth/forgot-password",
+      request,
+    );
     return data;
   },
 
-  verifyEmailCode: async (request: VerifyEmailCodeRequest): Promise<VerifyEmailCodeResponse> => {
-    const { data } = await httpClient.post<VerifyEmailCodeResponse>("/api/v2/client-auth/verify-reset-code", request);
+  verifyEmailCode: async (
+    request: VerifyEmailCodeRequest,
+  ): Promise<VerifyEmailCodeResponse> => {
+    const { data } = await httpClient.post<VerifyEmailCodeResponse>(
+      "/api/v2/client-auth/verify-reset-code",
+      request,
+    );
     return data;
   },
 
-  resetPassword: async (request: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
-    const { data } = await httpClient.post<ResetPasswordResponse>("/api/v2/client-auth/reset-password", request);
+  resetPassword: async (
+    request: ResetPasswordRequest,
+  ): Promise<ResetPasswordResponse> => {
+    const { data } = await httpClient.post<ResetPasswordResponse>(
+      "/api/v2/client-auth/reset-password",
+      request,
+    );
+    return data;
+  },
+
+  // Phone login — see PhoneLoginDialog. checkPhone tells the UI which form
+  // to render next; loginByPhone/setPasswordByPhone mirror login()/register()
+  // but keyed by phone instead of email (see api/types.ts doc comments).
+  checkPhone: async (
+    request: CheckPhoneRequest,
+  ): Promise<CheckPhoneResponse> => {
+    const { data } = await httpClient.post<CheckPhoneResponse>(
+      "/api/v2/client-auth/check-phone",
+      request,
+    );
+    return data;
+  },
+
+  loginByPhone: async (
+    request: LoginByPhoneRequest,
+  ): Promise<UserTokenData> => {
+    const { data } = await httpClient.post<UserTokenData>(
+      "/api/v2/client-auth/login-by-phone",
+      request,
+    );
+    return data;
+  },
+
+  setPasswordByPhone: async (
+    request: SetPasswordByPhoneRequest,
+  ): Promise<UserTokenData> => {
+    const { data } = await httpClient.post<UserTokenData>(
+      "/api/v2/client-auth/set-password-by-phone",
+      request,
+    );
     return data;
   },
 
@@ -268,17 +370,27 @@ export const authUserApi = {
   // captured at login time and never actually persisted edits (see
   // AuthContext.userDisplay comments).
   me: async (): Promise<UserProfile> => {
-    const { data } = await httpClient.get<UserProfile>("/api/v2/client-auth/me");
+    const { data } = await httpClient.get<UserProfile>(
+      "/api/v2/client-auth/me",
+    );
     return data;
   },
 
   updateMe: async (request: UpdateProfileRequest): Promise<UserProfile> => {
-    const { data } = await httpClient.put<UserProfile>("/api/v2/client-auth/me", request);
+    const { data } = await httpClient.put<UserProfile>(
+      "/api/v2/client-auth/me",
+      request,
+    );
     return data;
   },
 
-  changePassword: async (request: ChangePasswordRequest): Promise<ChangePasswordResponse> => {
-    const { data } = await httpClient.post<ChangePasswordResponse>("/api/v2/client-auth/change-password", request);
+  changePassword: async (
+    request: ChangePasswordRequest,
+  ): Promise<ChangePasswordResponse> => {
+    const { data } = await httpClient.post<ChangePasswordResponse>(
+      "/api/v2/client-auth/change-password",
+      request,
+    );
     return data;
   },
 };

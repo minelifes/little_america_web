@@ -42,7 +42,7 @@ export default function AuthCheckbox({ label, checked, onClick }: AuthCheckboxPr
       >
         {checked && <CheckIcon sx={{ fontSize: 14, color: "#ffffff" }} />}
       </Box>
-      <Box component="span" sx={{ fontSize: 13, color: colors.mainTextColor }}>
+      <Box component="span" sx={{ fontSize: 13, textAlign: "left", color: colors.mainTextColor }}>
         {label}
       </Box>
     </Box>

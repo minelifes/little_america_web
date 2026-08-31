@@ -28,8 +28,19 @@ export default function RegisterVerifyScreen() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const token = await authUserApi.verifyRegistrationEmail({ email: auth.registerEmail, code: code.trim() });
-      auth.onAuthSuccess(token, { name: nameFromToken(token), email: auth.registerEmail }, true);
+      const token = await authUserApi.verifyRegistrationEmail({
+        email: auth.registerEmail,
+        code: code.trim(),
+      });
+      // Email isn't carried into userDisplay — it was only ever the
+      // verification channel, not something shown again (see
+      // RegisterScreen's doc comment). Phone is the account's real display
+      // identity now, so that's what needs to survive across this step.
+      auth.onAuthSuccess(
+        token,
+        { name: nameFromToken(token), phone: auth.registerPhone || undefined },
+        true,
+      );
     } catch {
       setError("Невірний або застарілий код підтвердження.");
     } finally {
@@ -58,12 +69,30 @@ export default function RegisterVerifyScreen() {
       variant="close"
       onHeaderAction={auth.close}
       error={error}
-      footer={<AuthSubmitButton text="ПІДТВЕРДИТИ" onClick={handleSubmit} disabled={!valid} loading={isSubmitting} />}
+      footer={
+        <AuthSubmitButton
+          text="ПІДТВЕРДИТИ"
+          onClick={handleSubmit}
+          disabled={!valid}
+          loading={isSubmitting}
+        />
+      }
     >
-      <Box sx={{ fontSize: 13, color: colors.additionalTextColor, lineHeight: 1.5 }}>
-        Введіть код підтвердження, надісланий на {auth.registerEmail || "вашу пошту"}.
+      <Box
+        sx={{
+          fontSize: 13,
+          color: colors.additionalTextColor,
+          lineHeight: 1.5,
+        }}
+      >
+        Введіть код підтвердження, надісланий на{" "}
+        {auth.registerEmail || "вашу пошту"}.
       </Box>
-      <FlatTextField placeholder="Код підтвердження" value={code} onChange={(e) => setCode(e.target.value)} />
+      <FlatTextField
+        placeholder="Код підтвердження"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+      />
       <Box
         component="button"
         type="button"
@@ -81,7 +110,9 @@ export default function RegisterVerifyScreen() {
           textDecoration: "underline",
         }}
       >
-        {resent ? "Код надіслано повторно" : "Не отримали код? Надіслати ще раз"}
+        {resent
+          ? "Код надіслано повторно"
+          : "Не отримали код? Надіслати ще раз"}
       </Box>
     </AuthDrawerLayout>
   );

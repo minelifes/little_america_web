@@ -6,21 +6,27 @@ import FlatTextField from "../common/FlatTextField";
 import SettingsTextLink from "./SettingsTextLink";
 import { useAuth } from "../../auth/AuthContext";
 import { isPasswordValid } from "../../auth/validation";
-import { useChangePassword, useProfile, useUpdateProfile } from "../../api/hooks";
+import {
+  useChangePassword,
+  useProfile,
+  useUpdateProfile,
+} from "../../api/hooks";
 import { colors } from "../../theme/theme";
 
 type Mode = "view" | "edit";
 
-const FIELD_PENCIL = <EditOutlinedIcon sx={{ fontSize: 16, color: "rgba(0,0,0,0.3)" }} />;
+const FIELD_PENCIL = (
+  <EditOutlinedIcon sx={{ fontSize: 16, color: "rgba(0,0,0,0.3)" }} />
+);
 
 // NOT ported from Dart — profile-edit form matching the reference
 // screenshots. Name/phone are now real (GET/PUT /api/v2/client-auth/me via
 // useProfile/useUpdateProfile) and password changes are real too (POST
 // /api/v2/client-auth/change-password via useChangePassword) — see api/hooks.ts.
-// Email is intentionally NOT editable here: it's the login identifier and
-// the backend's /me endpoint deliberately doesn't support changing it (see
-// ClientAuthController.updateMe comment) — changing it safely would need
-// re-verification, out of scope for this pass.
+// Email is intentionally NOT shown here at all — it's only ever collected at
+// registration to deliver the one-time verification code (see
+// RegisterScreen's doc comment); phone is the account's real, displayed
+// identity (it's also the only login method — see PhoneLoginDialog).
 export default function SettingsForm() {
   const auth = useAuth();
   const { data: profile } = useProfile();
@@ -51,8 +57,6 @@ export default function SettingsForm() {
     setPhone(profile.phone);
   }, [profile]);
 
-  const email = profile?.email ?? auth.userDisplay?.email ?? "";
-
   const startEdit = () => {
     setName(profile?.name ?? auth.userDisplay?.name ?? "");
     setLastName(profile?.lastname ?? "");
@@ -71,7 +75,10 @@ export default function SettingsForm() {
         middleName: middleName.trim(),
         phone: phone.trim(),
       });
-      auth.updateUserDisplay({ name: name.trim() || undefined, phone: phone.trim() || undefined });
+      auth.updateUserDisplay({
+        name: name.trim() || undefined,
+        phone: phone.trim() || undefined,
+      });
       setMode("view");
     } catch {
       setSaveError("Не вдалося зберегти зміни. Спробуйте ще раз.");
@@ -87,8 +94,14 @@ export default function SettingsForm() {
   };
 
   const handleSavePassword = async () => {
-    if (oldPassword.length === 0 || !isPasswordValid(newPassword) || newPassword !== confirmPassword) {
-      setPasswordError("Перевірте пароль — новий пароль має бути 6+ символів і збігатись у обох полях.");
+    if (
+      oldPassword.length === 0 ||
+      !isPasswordValid(newPassword) ||
+      newPassword !== confirmPassword
+    ) {
+      setPasswordError(
+        "Перевірте пароль — новий пароль має бути 6+ символів і збігатись у обох полях.",
+      );
       return;
     }
     setPasswordError(null);
@@ -135,10 +148,6 @@ export default function SettingsForm() {
           />
         </Box>
         <Box sx={{ flex: "1 1 380px" }}>
-          {/* Email is never editable here — see file comment. */}
-          <FlatTextField placeholder="Email" type="email" value={email} disabled />
-        </Box>
-        <Box sx={{ flex: "1 1 380px" }}>
           <FlatTextField
             placeholder="Номер мобільного"
             type="tel"
@@ -160,7 +169,12 @@ export default function SettingsForm() {
       <Box sx={{ maxWidth: 420 }}>
         {!isChangingPassword ? (
           <>
-            <FlatTextField placeholder="Пароль" type="password" value="**********" disabled />
+            <FlatTextField
+              placeholder="Пароль"
+              type="password"
+              value="**********"
+              disabled
+            />
             {mode === "edit" && (
               <Box sx={{ mt: 2 }}>
                 <SettingsTextLink
@@ -197,7 +211,11 @@ export default function SettingsForm() {
               </Box>
             )}
             <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <SettingsTextLink text="СКАСУВАТИ" color="#e53935" onClick={cancelPasswordChange} />
+              <SettingsTextLink
+                text="СКАСУВАТИ"
+                color="#e53935"
+                onClick={cancelPasswordChange}
+              />
               <SettingsTextLink
                 text="ЗБЕРЕГТИ ПАРОЛЬ"
                 icon={<EditOutlinedIcon sx={{ fontSize: 15 }} />}

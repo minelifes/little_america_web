@@ -20,12 +20,28 @@ export default function AuthLoginOrRegisterLinks() {
   } as const;
 
   return (
-    <Box sx={{ textAlign: "center", fontSize: 13, color: colors.additionalTextColor }}>
-      <Box component="button" type="button" onClick={() => auth.goTo("login")} sx={linkSx}>
+    <Box
+      sx={{
+        textAlign: "center",
+        fontSize: 13,
+        color: colors.additionalTextColor,
+      }}
+    >
+      <Box
+        component="button"
+        type="button"
+        onClick={() => auth.goTo("loginPhone")}
+        sx={linkSx}
+      >
         Увійти
       </Box>{" "}
       або{" "}
-      <Box component="button" type="button" onClick={() => auth.goTo("register")} sx={linkSx}>
+      <Box
+        component="button"
+        type="button"
+        onClick={() => auth.goTo("register")}
+        sx={linkSx}
+      >
         Зареєструватися
       </Box>
     </Box>

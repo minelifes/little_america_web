@@ -27,7 +27,7 @@ export default function ForgotNewPasswordScreen() {
       await authUserApi.resetPassword({ hash: auth.resetHash, password });
       auth.setResetEmail("");
       auth.setResetHash("");
-      auth.goTo("login");
+      auth.goTo("loginPhone");
     } catch {
       setError("Не вдалося зберегти новий пароль. Спробуйте ще раз.");
     } finally {
@@ -43,7 +43,12 @@ export default function ForgotNewPasswordScreen() {
       error={error}
       footer={
         <>
-          <AuthSubmitButton text="ЗБЕРЕГТИ" onClick={handleSubmit} disabled={!valid} loading={isSubmitting} />
+          <AuthSubmitButton
+            text="ЗБЕРЕГТИ"
+            onClick={handleSubmit}
+            disabled={!valid}
+            loading={isSubmitting}
+          />
           <AuthLoginOrRegisterLinks />
         </>
       }

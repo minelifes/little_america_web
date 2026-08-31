@@ -19,6 +19,7 @@ import { useCart } from "../cart/CartContext";
 import { orderApi } from "../api/services";
 import { estimateDeliveryFee } from "../order/deliveryFee";
 import { DELIVERY_METHODS, UKR_POST_ID } from "../order/deliveryMethods";
+import { toE164 } from "../order/phone";
 import { ROUTES } from "../routes";
 import { scrollToTop } from "../utils/scroll";
 import type { OrderRequest } from "../api/types";
@@ -78,7 +79,11 @@ export default function OrderPage() {
           name: personal.name,
           lastname: personal.lastname,
           middlename: "",
-          phone: personal.phone,
+          // Was sending the bare 9-digit number with no country code — see
+          // order/phone.ts's toE164 doc comment for why that's a real bug,
+          // not just cosmetic (this value gets stored as ClientEntity.phone
+          // verbatim).
+          phone: toE164(personal.phone),
           email: personal.email || undefined,
           npCity: delivery.npCity ?? undefined,
           npWarehouse: delivery.npWarehouse ?? undefined,

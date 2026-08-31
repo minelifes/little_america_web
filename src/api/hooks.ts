@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authUserApi, brandApi, categoryApi, newsApi, npApi, orderApi, productApi, walletApi } from "./services";
 import { hasValidUserToken } from "./auth";
+import { useBonuses } from "./constants";
 import type { ChangePasswordRequest, SearchFilters, UpdateProfileRequest } from "./types";
 
 export const useNews = () =>
@@ -148,7 +149,19 @@ export const useWarehouses = (cityRef: string | undefined) =>
 export const useMyOrders = (page = 1, count = 20) =>
   useQuery({
     queryKey: ["account", "orders", page, count],
-    queryFn: () => orderApi.getWebList(page, count),
+    queryFn: () => orderApi.getWebList(page, count, true),
+    enabled: hasValidUserToken(),
+    placeholderData: keepPreviousData,
+  });
+
+/** "Мої покупки" — the in-store counterpart of useMyOrders: sales staff
+ * linked to this client by phone (see StoreClientDialog on the admin app),
+ * not orders placed through this storefront. Same paginated endpoint,
+ * `online=false` instead of the default `true`. */
+export const useMyPurchases = (page = 1, count = 20) =>
+  useQuery({
+    queryKey: ["account", "purchases", page, count],
+    queryFn: () => orderApi.getWebList(page, count, false),
     enabled: hasValidUserToken(),
     placeholderData: keepPreviousData,
   });
@@ -164,14 +177,16 @@ export const useBonusBalance = () =>
   useQuery({
     queryKey: ["account", "wallet"],
     queryFn: walletApi.getWallet,
-    enabled: hasValidUserToken(),
+    // Bonuses program isn't launched yet — see api/constants.ts's useBonuses
+    // doc comment. Skips the fetch entirely while disabled.
+    enabled: useBonuses && hasValidUserToken(),
   });
 
 export const useBonusHistory = () =>
   useQuery({
     queryKey: ["account", "wallet", "history"],
     queryFn: () => walletApi.getHistory(),
-    enabled: hasValidUserToken(),
+    enabled: useBonuses && hasValidUserToken(),
   });
 
 export const useProfile = () =>

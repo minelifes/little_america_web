@@ -3,13 +3,19 @@ import Box from "@mui/material/Box";
 import { useNavigate } from "react-router-dom";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import ArrowIcon from "../common/ArrowIcon";
 import { useAuth } from "../../auth/AuthContext";
 import { colors } from "../../theme/theme";
 import { ROUTES } from "../../routes";
+import { useBonuses } from "../../api/constants";
 
-export type AccountSection = "settings" | "orders" | "bonuses";
+export type AccountSection = "settings" | "orders" | "purchases" | "bonuses";
+
+// Matches the error-red used elsewhere in this app (e.g. SettingsForm's
+// save-error text) — no dedicated error/danger color exists in theme.ts yet.
+const LOGOUT_RED = "#e53935";
 
 interface AccountSidebarProps {
   active: AccountSection;
@@ -23,7 +29,7 @@ export default function AccountSidebar({ active }: AccountSidebarProps) {
 
   return (
     <Box sx={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column" }}>
-      <Box sx={{ display: "flex", flexDirection: "column" }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: "2px" }}>
         <SidebarRow
           icon={<ManageAccountsOutlinedIcon sx={{ fontSize: 20 }} />}
           label="Налаштування"
@@ -37,11 +43,19 @@ export default function AccountSidebar({ active }: AccountSidebarProps) {
           onClick={active === "orders" ? undefined : () => navigate(ROUTES.accountOrders)}
         />
         <SidebarRow
-          icon={<WorkspacePremiumOutlinedIcon sx={{ fontSize: 20 }} />}
-          label="Бонуси"
-          isActive={active === "bonuses"}
-          onClick={active === "bonuses" ? undefined : () => navigate(ROUTES.accountBonuses)}
+          icon={<StorefrontOutlinedIcon sx={{ fontSize: 20 }} />}
+          label="Мої покупки"
+          isActive={active === "purchases"}
+          onClick={active === "purchases" ? undefined : () => navigate(ROUTES.accountPurchases)}
         />
+        {useBonuses && (
+          <SidebarRow
+            icon={<WorkspacePremiumOutlinedIcon sx={{ fontSize: 20 }} />}
+            label="Бонуси"
+            isActive={active === "bonuses"}
+            onClick={active === "bonuses" ? undefined : () => navigate(ROUTES.accountBonuses)}
+          />
+        )}
       </Box>
 
       <Box sx={{ mt: "auto", pt: 6 }}>
@@ -50,19 +64,27 @@ export default function AccountSidebar({ active }: AccountSidebarProps) {
           type="button"
           onClick={auth.logout}
           sx={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: 1,
+            minWidth:"150px",
+            px: "18px",
+            py: "10px",
+            borderRadius: "12px",
+            border: `1px solid ${LOGOUT_RED}`,
             background: "none",
-            border: "none",
             cursor: "pointer",
             fontFamily: "inherit",
             fontSize: 14,
             fontWeight: 600,
-            color: colors.mainTextColor,
+            color: LOGOUT_RED,
+            transition: "background-color 200ms ease",
+            "&:hover": {
+              backgroundColor: "rgba(229,57,53,0.08)",
+            },
           }}
         >
-          <ArrowIcon width={20} rotate />
+          <ArrowIcon width={20} rotate color={LOGOUT_RED} />
           Вийти
         </Box>
       </Box>
@@ -93,11 +115,22 @@ function SidebarRow({
         gap: "10px",
         width: "100%",
         py: "14px",
+        px: "12px",
+        mx: "-12px",
+        borderRadius: "10px",
         background: "none",
+        backgroundColor: isActive ? colors.mainTextColor : "transparent",
         border: "none",
         cursor: onClick ? "pointer" : "default",
         fontFamily: "inherit",
-        color: isActive ? colors.mainTextColor : colors.additionalTextColor,
+        color: isActive ? "#ffffff" : colors.additionalTextColor,
+        transition: "background-color 200ms ease, color 200ms ease",
+        ...(onClick && {
+          "&:hover": {
+            backgroundColor: "rgba(0,0,0,0.08)",
+            color: colors.mainTextColor,
+          },
+        }),
       }}
     >
       {icon}

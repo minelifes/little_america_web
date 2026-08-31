@@ -16,10 +16,10 @@ import { ROUTES } from "../routes";
 export default function BonusDetailPage() {
   const { number } = useParams<{ number: string }>();
   const navigate = useNavigate();
-  // isFetching (not just isLoading) so the loader also reappears on a
-  // background refetch — e.g. navigating back to this receipt a second
-  // time — not just on the very first load.
-  const { data: order, isFetching, isError } = useOrderDetail(number);
+  // isLoading (not isFetching) — see OrderDetailPage's identical comment:
+  // don't blank a cached receipt back to a skeleton just because the page
+  // remounted, only when there's truly nothing cached yet.
+  const { data: order, isLoading, isError } = useOrderDetail(number);
 
   return (
     <AccountPageLayout active="bonuses">
@@ -48,19 +48,19 @@ export default function BonusDetailPage() {
         </Box>
       </Box>
 
-      {isFetching && <ReceiptViewSkeleton />}
-      {!isFetching && (isError || !order) && (
+      {isLoading && <ReceiptViewSkeleton />}
+      {!isLoading && (isError || !order) && (
         <Box sx={{ fontSize: 14, color: colors.additionalTextColor }}>Транзакцію не знайдено.</Box>
       )}
 
-      {!isFetching && order && (
+      {!isLoading && order && (
         <ReceiptView
           order={order}
           metaExtra={{
             label: "Тип замовлення:",
             content: (
               <Box component="span" sx={{ fontSize: 13, fontWeight: 700 }}>
-                Онлайн
+                {order.isOnline ? "Онлайн" : "У магазині"}
               </Box>
             ),
           }}

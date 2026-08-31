@@ -29,7 +29,9 @@ export default function ForgotEmailScreen() {
       auth.setResetEmail(email.trim());
       auth.goTo("forgotCode");
     } catch {
-      setError("Не вдалося надіслати лист. Перевірте пошту та спробуйте ще раз.");
+      setError(
+        "Не вдалося надіслати лист. Перевірте пошту та спробуйте ще раз.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -39,19 +41,36 @@ export default function ForgotEmailScreen() {
     <AuthDrawerLayout
       title="ВІДНОВЛЕННЯ ПАРОЛЯ"
       variant="back"
-      onHeaderAction={() => auth.goTo("login")}
+      onHeaderAction={() => auth.goTo("loginPhone")}
       error={error}
       footer={
         <>
-          <AuthSubmitButton text="ВІДПРАВИТИ" onClick={handleSubmit} disabled={!valid} loading={isSubmitting} />
+          <AuthSubmitButton
+            text="ВІДПРАВИТИ"
+            onClick={handleSubmit}
+            disabled={!valid}
+            loading={isSubmitting}
+          />
           <AuthLoginOrRegisterLinks />
         </>
       }
     >
-      <Box sx={{ fontSize: 13, color: colors.additionalTextColor, lineHeight: 1.5 }}>
-        Залишите вашу поштову адресу, вам прийде повідомлення, дотримуйтесь подальших дій вказаних у ньому.
+      <Box
+        sx={{
+          fontSize: 13,
+          color: colors.additionalTextColor,
+          lineHeight: 1.5,
+        }}
+      >
+        Залишите вашу поштову адресу, вам прийде повідомлення, дотримуйтесь
+        подальших дій вказаних у ньому.
       </Box>
-      <FlatTextField placeholder="Пошта" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <FlatTextField
+        placeholder="Пошта"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
     </AuthDrawerLayout>
   );
 }

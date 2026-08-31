@@ -18,6 +18,10 @@ export const ROUTES = {
   accountSettings: "/account/settings",
   accountOrders: "/account/orders",
   accountOrderDetail: "/account/orders/",
+  // "Мої покупки" — in-store purchases linked to this client by phone
+  // (see OrdersPage vs PurchasesPage), sharing the same detail route/page
+  // as "Замовлення" above (order detail doesn't care about origin).
+  accountPurchases: "/account/purchases",
   accountBonuses: "/account/bonuses",
   accountBonusDetail: "/account/bonuses/",
 } as const;

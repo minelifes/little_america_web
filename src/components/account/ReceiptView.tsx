@@ -1,13 +1,15 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import NetworkImage from "../common/NetworkImage";
-import { storageImageUrl } from "../../api/constants";
+import { storageImageUrl, useBonuses } from "../../api/constants";
 import { colors } from "../../theme/theme";
 import { formatUkrainianDateTime } from "../../utils/date";
+import { buildReceiptPdf } from "../../utils/receiptPdf";
 import type { OrderDetail } from "../../api/types";
 
 export const RECEIPT_ACCENT_PINK = "#DD5D79";
@@ -27,6 +29,23 @@ interface ReceiptViewProps {
 // point (see account/mockBonuses.ts). NOT ported from Dart. "ЗАВАНТАЖИТИ
 // ЧЕК" is a visual stub — no receipt-generation endpoint exists.
 export default function ReceiptView({ order, metaExtra }: ReceiptViewProps) {
+  const [isBuildingPdf, setIsBuildingPdf] = useState(false);
+
+  const handleDownloadReceipt = async () => {
+    if (isBuildingPdf) return;
+    setIsBuildingPdf(true);
+    try {
+      // jsPDF's layout work below is synchronous and CPU-bound, so without
+      // yielding a frame first the button would just freeze straight into
+      // the finished download with the spinner never actually painting.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      const doc = buildReceiptPdf(order);
+      doc.save(`Чек №${order.number}.pdf`);
+    } finally {
+      setIsBuildingPdf(false);
+    }
+  };
+
   return (
     <>
       <Box sx={{ fontSize: 20, fontWeight: 700 }}>№{order.number}</Box>
@@ -47,7 +66,7 @@ export default function ReceiptView({ order, metaExtra }: ReceiptViewProps) {
               <Box sx={{ mt: "2px", fontSize: 12, color: colors.additionalTextColor }}>x {item.count}</Box>
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
-              {item.bonusPoints && (
+              {useBonuses && item.bonusPoints && (
                 <Box
                   component="span"
                   sx={{
@@ -88,36 +107,49 @@ export default function ReceiptView({ order, metaExtra }: ReceiptViewProps) {
         </Box>
 
         <Box sx={{ flex: "1 1 300px" }}>
-          <Box sx={{ fontSize: 13, color: colors.additionalTextColor, mb: "10px" }}>Данні доставки:</Box>
+          {/* In-store sale ("Мої покупки") — no delivery happened, so skip
+              the address/TTN rows that don't apply and just show who bought
+              it. See OrderDetail.isOnline. */}
+          <Box sx={{ fontSize: 13, color: colors.additionalTextColor, mb: "10px" }}>
+            {order.isOnline ? "Данні доставки:" : "Клієнт:"}
+          </Box>
           <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <DeliveryRow icon={<PhoneOutlinedIcon sx={{ fontSize: 18 }} />} text={order.delivery.phone} />
             <DeliveryRow icon={<PersonOutlineIcon sx={{ fontSize: 18 }} />} text={order.delivery.fullName} />
-            <DeliveryRow icon={<PlaceOutlinedIcon sx={{ fontSize: 18 }} />} text={order.delivery.address} />
-            <DeliveryRow
-              icon={<DescriptionOutlinedIcon sx={{ fontSize: 18 }} />}
-              text={`Номер декларації: ${order.delivery.declarationNumber}`}
-            />
+            {order.isOnline && (
+              <>
+                <DeliveryRow icon={<PlaceOutlinedIcon sx={{ fontSize: 18 }} />} text={order.delivery.address} />
+                <DeliveryRow
+                  icon={<DescriptionOutlinedIcon sx={{ fontSize: 18 }} />}
+                  text={`Номер декларації: ${order.delivery.declarationNumber}`}
+                />
+              </>
+            )}
           </Box>
         </Box>
       </Box>
 
       <Box sx={{ borderRadius: "14px", backgroundColor: "rgba(0,0,0,0.02)", p: 3, maxWidth: 480 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-          <Box component="span" sx={{ fontSize: 13, color: colors.additionalTextColor }}>
-            Нараховані бали:
+        {useBonuses && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Box component="span" sx={{ fontSize: 13, color: colors.additionalTextColor }}>
+              Нараховані бали:
+            </Box>
+            <Box component="span" sx={{ fontSize: 13, fontWeight: 700, color: RECEIPT_ACCENT_PINK, display: "flex", alignItems: "center", gap: "4px" }}>
+              +{order.bonusesEarned} Б
+            </Box>
           </Box>
-          <Box component="span" sx={{ fontSize: 13, fontWeight: 700, color: RECEIPT_ACCENT_PINK, display: "flex", alignItems: "center", gap: "4px" }}>
-            +{order.bonusesEarned} Б
+        )}
+        {order.isOnline && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Box component="span" sx={{ fontSize: 13, color: colors.additionalTextColor }}>
+              Доставка:
+            </Box>
+            <Box component="span" sx={{ fontSize: 13 }}>
+              {order.deliveryFee.toFixed(2)} UAH
+            </Box>
           </Box>
-        </Box>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-          <Box component="span" sx={{ fontSize: 13, color: colors.additionalTextColor }}>
-            Доставка:
-          </Box>
-          <Box component="span" sx={{ fontSize: 13 }}>
-            {order.deliveryFee.toFixed(2)} UAH
-          </Box>
-        </Box>
+        )}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
           <Box component="span" sx={{ fontSize: 13, color: colors.additionalTextColor }}>
             Сума замовлення:
@@ -141,7 +173,13 @@ export default function ReceiptView({ order, metaExtra }: ReceiptViewProps) {
         <Box
           component="button"
           type="button"
+          onClick={handleDownloadReceipt}
+          disabled={isBuildingPdf}
           sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
             height: 50,
             px: "28px",
             border: "none",
@@ -152,10 +190,12 @@ export default function ReceiptView({ order, metaExtra }: ReceiptViewProps) {
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: "0.5px",
-            cursor: "pointer",
+            cursor: isBuildingPdf ? "default" : "pointer",
+            opacity: isBuildingPdf ? 0.75 : 1,
           }}
         >
-          ЗАВАНТАЖИТИ ЧЕК
+          {isBuildingPdf && <CircularProgress size={16} thickness={5} sx={{ color: "#ffffff" }} />}
+          {isBuildingPdf ? "ЗАВАНТАЖЕННЯ..." : "ЗАВАНТАЖИТИ ЧЕК"}
         </Box>
       </Box>
     </>

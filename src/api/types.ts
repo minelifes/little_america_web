@@ -315,6 +315,35 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
+// Phone login — a separate path from the email login above, for accounts
+// staff created via the admin app's order-editor phone-connect field (see
+// backend ClientPhoneCheckField), which start out with no password set.
+// Deliberately no OTP/SMS step (explicit product decision — see
+// ClientAuthController.setPasswordByPhone's doc comment on the backend):
+// checkPhone tells the UI which of the two forms below to show.
+export interface CheckPhoneRequest {
+  phone: string;
+}
+
+export interface CheckPhoneResponse {
+  exists: boolean;
+  hasPassword: boolean;
+}
+
+export interface LoginByPhoneRequest {
+  phone: string;
+  password: string;
+  captchaToken?: string;
+}
+
+// Only succeeds once, for an account that has never had a password (see
+// backend doc comment) — not a general "reset password by phone".
+export interface SetPasswordByPhoneRequest {
+  phone: string;
+  password: string;
+  captchaToken?: string;
+}
+
 // ---- Account: profile / orders / bonuses ----
 //
 // NOT ported from Dart. Backed by real endpoints added to the Kotlin
@@ -375,6 +404,26 @@ export interface OrderDelivery {
   declarationNumber: string;
 }
 
+/** Payment breakdown for the downloadable PDF receipt (see receiptPdf.ts,
+ * which mirrors the admin app's thermal-printer receipt's card/cash rows).
+ * `type` / cash* / card* fields come from the order's bill — null `type`
+ * means there's no bill at all (e.g. a certificate covered the full sum).
+ * `certificateSum` is independent of `type`: a certificate can cover part
+ * of an order with the remainder paid by card/cash, so both can be
+ * non-null at once. */
+export interface OrderPayment {
+  type: "cash" | "card" | null;
+  cashInput: number | null;
+  cashOutput: number | null;
+  cardSum: number | null;
+  cardNumber: string | null;
+  terminalId: string | null;
+  authCode: string | null;
+  rrn: string | null;
+  billNumber: string | null;
+  certificateSum: number | null;
+}
+
 export interface OrderDetail extends OrderSummary {
   /** ISO-8601 instant — format with formatUkrainianDateTime() from utils/date. */
   createdAt: string;
@@ -382,6 +431,12 @@ export interface OrderDetail extends OrderSummary {
   deliveryFee: number;
   bonusesEarned: number;
   delivery: OrderDelivery;
+  /** true = placed through this storefront's checkout ("Замовлення"), false
+   * = an in-store sale linked to this client by phone ("Мої покупки" — see
+   * OrderEntity.online on the backend). ReceiptView uses this to hide
+   * delivery/TTN UI that doesn't apply to an in-store sale. */
+  isOnline: boolean;
+  payment: OrderPayment;
 }
 
 export interface PagedOrders {

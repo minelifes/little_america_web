@@ -1,4 +1,10 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { clearUserToken, hasValidUserToken, setUserToken } from "../api/auth";
 import type { UserTokenData } from "../api/types";
 
@@ -7,8 +13,12 @@ import type { UserTokenData } from "../api/types";
 // api/types.ts). Designed fresh from the reference screenshots, following
 // the same open/close-drawer pattern already used by CartContext.
 
+// Email+password login (LoginScreen) was retired — phone is now the only
+// login method (see PhoneLoginDialog). Email still exists elsewhere in the
+// flow (registration needs a verifiable channel, and forgot-password still
+// uses it — see ForgotEmailScreen), just not for logging back in.
 export type AuthScreen =
-  | "login"
+  | "loginPhone"
   | "register"
   | "registerVerify"
   | "forgotEmail"
@@ -18,7 +28,10 @@ export type AuthScreen =
 
 interface UserDisplay {
   name?: string;
-  email: string;
+  /** Optional, not required — a phone-login session (see PhoneLoginDialog)
+   * has no email at all to show here. Every reader already falls back to
+   * "" or fetches the real profile via authUserApi.me(). */
+  email?: string;
   /** NOT part of the login/register response — only ever set locally via the
    * settings page's profile form (see AccountSettingsPage), since no
    * update-profile endpoint exists to fetch/save it against the server. */
@@ -41,7 +54,11 @@ interface AuthContextValue {
   goTo: (screen: AuthScreen) => void;
 
   /** Called by LoginScreen/RegisterScreen after a successful API call — replaces the cached bearer token with the one from the response and marks the session as logged in. `remember: false` (login screen's "Зберегти данні" unchecked) keeps the session in sessionStorage instead of localStorage. */
-  onAuthSuccess: (token: UserTokenData, user: UserDisplay, remember?: boolean) => void;
+  onAuthSuccess: (
+    token: UserTokenData,
+    user: UserDisplay,
+    remember?: boolean,
+  ) => void;
   logout: () => void;
   /** Merges a patch into userDisplay and re-persists it — used by the
    * settings page's "ЗБЕРЕГТИ" action. Local-only (see UserDisplay.phone). */
@@ -58,13 +75,21 @@ interface AuthContextValue {
   /** Carried from RegisterScreen to RegisterVerifyScreen — the email the verification code was sent to. */
   registerEmail: string;
   setRegisterEmail: (email: string) => void;
+  /** Carried from RegisterScreen to RegisterVerifyScreen — email is only
+   * ever used to deliver the verification code (see PhoneLoginDialog doc
+   * comment), so the phone typed at registration needs its own trip across
+   * the same two screens to end up in userDisplay instead. */
+  registerPhone: string;
+  setRegisterPhone: (phone: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readUserDisplay(): UserDisplay | null {
   try {
-    const raw = localStorage.getItem(USER_DISPLAY_STORAGE_KEY) ?? sessionStorage.getItem(USER_DISPLAY_STORAGE_KEY);
+    const raw =
+      localStorage.getItem(USER_DISPLAY_STORAGE_KEY) ??
+      sessionStorage.getItem(USER_DISPLAY_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as UserDisplay) : null;
   } catch {
     return null;
@@ -78,7 +103,11 @@ function writeUserDisplay(user: UserDisplay | null, persist = true) {
   try {
     localStorage.removeItem(USER_DISPLAY_STORAGE_KEY);
     sessionStorage.removeItem(USER_DISPLAY_STORAGE_KEY);
-    if (user) (persist ? localStorage : sessionStorage).setItem(USER_DISPLAY_STORAGE_KEY, JSON.stringify(user));
+    if (user)
+      (persist ? localStorage : sessionStorage).setItem(
+        USER_DISPLAY_STORAGE_KEY,
+        JSON.stringify(user),
+      );
   } catch {
     // ignore (private browsing / quota)
   }
@@ -96,13 +125,16 @@ function detectPersistMode(): boolean {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(hasValidUserToken);
-  const [userDisplay, setUserDisplayState] = useState<UserDisplay | null>(readUserDisplay);
+  const [userDisplay, setUserDisplayState] = useState<UserDisplay | null>(
+    readUserDisplay,
+  );
   const [persistSession, setPersistSession] = useState(detectPersistMode);
   const [isOpen, setIsOpen] = useState(false);
-  const [screen, setScreen] = useState<AuthScreen>("login");
+  const [screen, setScreen] = useState<AuthScreen>("loginPhone");
   const [resetEmail, setResetEmail] = useState("");
   const [resetHash, setResetHash] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -111,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isOpen,
       screen,
       open: (initialScreen) => {
-        setScreen(initialScreen ?? (isLoggedIn ? "account" : "login"));
+        setScreen(initialScreen ?? (isLoggedIn ? "account" : "loginPhone"));
         setIsOpen(true);
       },
       close: () => setIsOpen(false),
@@ -130,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         writeUserDisplay(null);
         setUserDisplayState(null);
         setIsLoggedIn(false);
-        setScreen("login");
+        setScreen("loginPhone");
         setIsOpen(false);
       },
       updateUserDisplay: (patch) => {
@@ -147,8 +179,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setResetHash,
       registerEmail,
       setRegisterEmail,
+      registerPhone,
+      setRegisterPhone,
     }),
-    [isLoggedIn, userDisplay, isOpen, screen, resetEmail, resetHash, registerEmail, persistSession],
+    [
+      isLoggedIn,
+      userDisplay,
+      isOpen,
+      screen,
+      resetEmail,
+      resetHash,
+      registerEmail,
+      registerPhone,
+      persistSession,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

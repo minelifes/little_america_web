@@ -1,3 +1,10 @@
+// Feature flags — toggle to enable/disable in-progress features without
+// ripping out their code/routes. The bonuses program isn't launched yet, so
+// it's fully disabled for now: hidden from account nav (AccountSidebar,
+// AccountScreen) and its routes redirect away (see App.tsx). Flip to true
+// once the program is ready to go live.
+export const useBonuses = false;
+
 // Ported 1:1 from lib/config/constants.dart
 export const REST_API_URL = "https://littleamerica.store/";
 // export const REST_API_URL = "http://localhost:8282";
